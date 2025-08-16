@@ -89,7 +89,18 @@ const registerUser = async (req, res) => {
 // for admin login 
 
 const adminLogin = async (req, res) => {
-    
+    try {
+        const {email, password} = req.body
+        if(email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD){
+            const token = jwt.sign(email+password, process.env.JWT_SECRET)
+            return res.json({success : true, token})
+        }else{
+            res.json({success: false, message : "Invalid creditientials"})
+        }
+    } catch (error) {
+        console.log(error.message);
+    return res.json({success : false,  message: error.messgae })
+    }
 }
 
 export {loginUser, registerUser, adminLogin}
