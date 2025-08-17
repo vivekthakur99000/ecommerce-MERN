@@ -3,8 +3,9 @@ import { assets } from "../assets/assets";
 import { useState } from "react";
 import axios from "axios";
 import { backendUrl } from "../App";
+import { toast } from "react-toastify";
 
-const Add = ({token}) => {
+const Add = ({ token }) => {
   const [image1, setImage1] = useState(false);
   const [image2, setImage2] = useState(false);
   const [image3, setImage3] = useState(false);
@@ -19,42 +20,55 @@ const Add = ({token}) => {
   const [sizes, setSizes] = useState([]);
 
   const onSubmitHandler = async (event) => {
-
     try {
-        event.preventDefault();
+      event.preventDefault();
 
-        const formData = new FormData()
+      const formData = new FormData();
 
-        formData.append("name", name)
-        formData.append("description", description)
-        formData.append("price", price)
-        formData.append("category", category)
-        formData.append("subCategory", subCategory)
-        formData.append("bestseller", bestseller)
-        formData.append("sizes", JSON.stringify(sizes))
+      formData.append("name", name);
+      formData.append("description", description);
+      formData.append("price", price);
+      formData.append("category", category);
+      formData.append("subCategory", subCategory);
+      formData.append("bestseller", bestseller);
+      formData.append("sizes", JSON.stringify(sizes));
 
+      image1 && formData.append("image1", image1);
+      image2 && formData.append("image2", image2);
+      image3 && formData.append("image3", image3);
+      image4 && formData.append("image4", image4);
 
-        image1 && formData.append("image1", image1)
-        image2 && formData.append("image2", image2)
-        image3 && formData.append("image3", image3)
-        image4 && formData.append("image4", image4)
+      const response = await axios.post(
+        backendUrl + "/api/product/add",
+        formData,
+        { headers: { token } }
+      );
 
-        const response = await axios.post(backendUrl+"/api/product/add", formData, {headers: {token}})
+      // console.log(response.data);
 
-        console.log(response.data);
-        
-
-
-
-
+      if (response.data.success) {
+        toast.success(response.data.message);
+        setName("");
+        setDescription("");
+        setImage1(false);
+        setImage2(false);
+        setImage3(false);
+        setImage4(false);
+        setPrice("");
+      } else {
+        toast.error(response.data.message);
+      }
     } catch (error) {
-        
+      console.log(error);
+      toast(error.message);
     }
-    
-  }
+  };
 
   return (
-    <form onSubmit={onSubmitHandler} className="flex flex-col w-full items-start">
+    <form
+      onSubmit={onSubmitHandler}
+      className="flex flex-col w-full items-start"
+    >
       <div className="">
         <p className="mb-2">Upload Image</p>
       </div>
@@ -142,7 +156,9 @@ const Add = ({token}) => {
             onChange={(e) => setCategory(e.target.value)}
             value={category}
             className="w-full px-3 py-2"
+            required
           >
+            <option value="">Select Category</option>
             <option value="Men">Men</option>
             <option value="Women">Women</option>
             <option value="Kids">Kids</option>
@@ -155,7 +171,9 @@ const Add = ({token}) => {
             onChange={(e) => setSubCategory(e.target.value)}
             value={subCategory}
             className="w-full px-3 py-2"
+            required
           >
+            <option value="">Select Subcategory</option>
             <option value="Topwear">Topwear</option>
             <option value="Bottomwear">Bottomwear</option>
             <option value="Winterwear">Winterwear</option>
