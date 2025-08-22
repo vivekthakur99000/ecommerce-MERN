@@ -3,9 +3,22 @@ import Title from "../components/Title";
 import CartTotal from "../components/CartTotal";
 import { assets } from "../src/assets/assets";
 import { ShopContext } from "../context/ShopContext";
+import { toast } from "react-toastify";
+import axios from "axios";
 
 const PlaceOrder = () => {
   const [method, setMethod] = useState("cod");
+  const {
+    navigate,
+    backendUrl,
+    token,
+    cartItems,
+    setCartItems,
+    getCartAmount,
+    delivery_fee,
+    products,
+    
+  } = useContext(ShopContext);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -26,10 +39,78 @@ const PlaceOrder = () => {
     setFormData((data) => ({ ...data, [name]: [value] }));
   };
 
-  const { navigate } = useContext(ShopContext);
+  const onSubmitHandler = async (event) => {
+    event.preventDefault();
+    try {
+      let orderItems = [];
+
+      for (const items in cartItems) {
+        for (const item in cartItems[items]) {
+          if (cartItems[items][item] > 0) {
+            const itemsInfo = structuredClone(
+              products.find((product) => product._id === items)
+            );
+            if (itemsInfo) {
+              itemsInfo.size = item;
+              itemsInfo.quantity = cartItems[items][item];
+              orderItems.push(itemsInfo);
+            }
+          }
+        }
+      }
+
+      let orderData = {
+        address : formData,
+        items : orderItems,
+        amount : getCartAmount() + delivery_fee
+      }
+
+      switch (method) {
+        // api calls for cod
+        case "cod":
+
+          const response = await axios.post(backendUrl+'/api/order/place', orderData, {headers : {token}})
+
+          if (response.data.success) {
+            setCartItems({})
+            navigate("/orders")
+          }else{
+            toast.error(response.data.message)
+          }
+          
+          break;
+
+        case "stripe" :
+
+        const responseStripe = await axios.post(backendUrl+"/api/order/stripe", orderData,{headers: {token}})
+
+        if (responseStripe.data.success) {
+          const {session_url} = responseStripe.data 
+          window.location.replace(session_url)
+        }else{
+          toast(responseStripe.data.message)
+        }
+
+          break;
+      
+        default:
+
+          break;
+      }
+
+
+    } catch (error) {
+      console.log(error);
+      toast.error(error.message)
+      
+    }
+  };
 
   return (
-    <form className="flex flex-col sm:flex-row justify-between gap-4 pt-5 sm:pt-14 min-h-[80vh]">
+    <form
+      onSubmit={onSubmitHandler}
+      className="flex flex-col sm:flex-row justify-between gap-4 pt-5 sm:pt-14 min-h-[80vh]"
+    >
       {/* left side */}
       <div className="flex flex-col gap-4 w-full sm:max-w-[480px]">
         <div className="text-xl sm:text-2xl my-3 ">
@@ -178,7 +259,6 @@ const PlaceOrder = () => {
           <div className="w-full text-end mt-8">
             <button
               type="submit"
-              
               className="bg-black text-white px-16 py-3 text-sm cursor-pointer"
             >
               PLACE ORDER
